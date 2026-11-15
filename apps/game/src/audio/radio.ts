@@ -393,7 +393,7 @@ function persist(): void {
         stationId: state.stationId,
         custom: state.stations
           .filter((station) => station.band === 'Saved')
-          .map((station) => ({ id: station.id, name: station.name, url: station.url })),
+          .map((station) => ({ id: station.id, name: station.name, url: station.url ?? '' })),
       } satisfies Saved),
     );
   } catch {
