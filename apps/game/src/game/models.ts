@@ -118,6 +118,19 @@ export class ModelKit {
     return group;
   }
 
+  /** A hatchback, nose towards -z. */
+  car(colour: string): THREE.Group {
+    const group = new THREE.Group();
+    const dark = this.colour('#15171c');
+    group.add(this.part(this.box, this.colour(colour), 0, 0.62, 0, [1.7, 0.62, 3.9]));
+    group.add(this.part(this.box, dark, 0, 1.18, 0.25, [1.52, 0.52, 2.1]));
+    for (const z of [-1.25, 1.3]) {
+      for (const x of [-0.82, 0.82])
+        group.add(this.part(this.wheel, dark, x, 0.3, z, [1, 1.2, 1.2]));
+    }
+    return group;
+  }
+
   /** A city bus, nose towards -z. */
   bus(colour: string): THREE.Group {
     const group = new THREE.Group();

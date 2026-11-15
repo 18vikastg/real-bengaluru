@@ -15,6 +15,7 @@ import { useUi } from '../state/ui';
 import { ChunkStreamer } from '../world/ChunkStreamer';
 import type { WorldMaterials } from '../world/materials';
 import { createWorldMaterials } from '../world/materials';
+import { AmbientLife } from './Ambient';
 import { Atmosphere } from './Atmosphere';
 import type { Figure } from './models';
 import { ModelKit } from './models';
@@ -79,6 +80,7 @@ export class GameView {
   private readonly streamer: ChunkStreamer;
   private readonly atmosphere: Atmosphere;
   private readonly kit = new ModelKit();
+  private readonly ambient: AmbientLife;
   private readonly ground: THREE.Mesh;
   private readonly resizer: ResizeObserver;
   private readonly raycaster = new THREE.Raycaster();
@@ -161,6 +163,7 @@ export class GameView {
     this.beacon.visible = false;
     this.actors.add(this.avatar.group, this.beacon, this.lamp);
     this.scene.add(this.actors);
+    this.ambient = new AmbientLife(this.kit, this.actors, baseUrl);
 
     for (const def of NPCS) {
       const figure = this.kit.figure(def.look);
@@ -321,6 +324,7 @@ export class GameView {
 
   private begin(index: WorldIndex): void {
     this.index = index;
+    this.ambient.setIndex(index);
     const city = useCity.getState();
     city.initWorld(index);
     const { positions } = useCity.getState();
@@ -633,6 +637,9 @@ export class GameView {
       this.placeNpcs();
     }
     this.animateActors(playing ? dt : 0, time);
+    if (ui.phase !== 'paused' && !city.travel) {
+      this.ambient.update(dt, this.x, this.z, ui.hour, city.raining, city.zones);
+    }
 
     // Load the city around whatever the camera is looking at: the player, or the ground ahead of the drone.
     this.camera.getWorldDirection(scratch);
@@ -669,6 +676,7 @@ export class GameView {
     canvas.removeEventListener('wheel', this.onWheel);
     this.scene.remove(this.streamer.root, this.actors, this.ground);
     this.streamer.dispose();
+    this.ambient.dispose();
     this.atmosphere.dispose();
     this.kit.dispose();
     this.ground.geometry.dispose();

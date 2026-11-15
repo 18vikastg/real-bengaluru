@@ -143,7 +143,8 @@ export function Hud() {
           <span data-testid="stats">
             {' '}
             · {fps} FPS · {world.loaded} chunks{world.pending > 0 ? ` (+${world.pending})` : ''} ·{' '}
-            {drawCalls} draws · {Math.round(triangles / 1000)}k tris
+            {drawCalls} draws · {Math.round(triangles / 1000)}k tris · {Math.round(player.x)},{' '}
+            {Math.round(player.z)}
           </span>
         </span>
         <label className="city-card hud-time">

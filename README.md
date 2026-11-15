@@ -23,6 +23,8 @@ metro, and talk to people who remember what you said to them.
   metro, bus, a haggled auto or a borrowed one. Carry a flask of coffee to
   Hudson Circle before it goes cold. Catch the seven o'clock bus in the rain.
   Peak-hour traffic and evening showers change what works.
+- **Streets with life on them.** Cars, autos, buses and pedestrians follow the
+  real roads, keep left, crawl at peak hour and brake for you.
 - **Ask the city.** Press G anywhere for a guide to the area you are standing
   in: what the place is, its history, where to eat, how to get somewhere else.
 - **The real map.** Streets, buildings and parks are baked from OpenStreetMap.
