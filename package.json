@@ -1,0 +1,40 @@
+{
+  "name": "gta-bengaluru",
+  "private": true,
+  "version": "0.0.0",
+  "description": "An original open-world browser game set in a stylised Bengaluru (internal codename).",
+  "author": "Vikas T G (https://github.com/18vikastg)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @blr/game dev",
+    "dev:site": "pnpm --filter @blr/site dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck && tsc --noEmit -p tools/tsconfig.json",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "e2e": "pnpm --filter @blr/game e2e",
+    "world:fetch": "NODE_USE_ENV_PROXY=1 node tools/osm/fetch.mjs",
+    "world:bake": "tsx tools/osm/bake.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/earcut": "^3.2.4",
+    "@types/node": "^26.6.6",
+    "earcut": "^3.2.4",
+    "eslint": "^10.14.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vitest": "^5.1.0"
+  }
+}

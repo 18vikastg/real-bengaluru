@@ -1,0 +1,12 @@
+{
+  "name": "@blr/content",
+  "private": true,
+  "version": "0.0.0",
+  "author": "Vikas T G (https://github.com/18vikastg)",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

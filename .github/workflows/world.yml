@@ -1,0 +1,50 @@
+name: Bake world
+
+# Downloads the OpenStreetMap extract for the play area and bakes it into
+# apps/game/public/world/. Runs when the play area or the anchors change,
+# or on demand from the Actions tab.
+on:
+  push:
+    branches: [main]
+    paths:
+      - tools/osm/**
+      - packages/content/src/city/anchors.ts
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: world
+  cancel-in-progress: false
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: tools/osm/cache
+          key: osm-${{ hashFiles('tools/osm/config.mjs') }}
+      - run: pnpm world:fetch
+      - run: pnpm world:bake
+      - name: Commit the baked world
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A apps/game/public/world
+          if git diff --cached --quiet; then
+            echo "World unchanged."
+          else
+            git commit -m "Bake world from OpenStreetMap"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi

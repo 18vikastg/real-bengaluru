@@ -1,0 +1,54 @@
+name: Deploy preview (GitHub Pages)
+
+# Publishes the landing site at / and the game at /play/.
+# One-time setup: repo Settings -> Pages -> Source: "GitHub Actions".
+# Manual only until Pages is switched on for this repo.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ASTRO_TELEMETRY_DISABLED: 1
+      SITE_URL: https://${{ github.repository_owner }}.github.io
+      SITE_BASE: /${{ github.event.repository.name }}/
+      GAME_BASE: /${{ github.event.repository.name }}/play/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Assemble site and game
+        run: |
+          mkdir -p _site/play
+          cp -r apps/site/dist/. _site/
+          cp -r apps/game/dist/. _site/play/
+          find _site -name '*.map' -delete
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
