@@ -7,8 +7,7 @@
 import type { Point } from './guide';
 
 export type MissionGoal =
-  | { kind: 'reach'; anchor: string; radius?: number }
-  | { kind: 'event'; name: string };
+  { kind: 'reach'; anchor: string; radius?: number } | { kind: 'event'; name: string };
 
 export interface MissionStep {
   id: string;
