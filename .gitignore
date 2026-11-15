@@ -11,3 +11,4 @@ playwright-report/
 .env.*
 !.env.example
 tools/osm/cache/
+tools/osm/sketch/

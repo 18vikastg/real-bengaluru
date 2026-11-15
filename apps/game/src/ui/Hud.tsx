@@ -1,14 +1,26 @@
+import { formatClock, formatMinutes } from '@blr/engine';
+import { useMemo } from 'react';
+import { trackerFor, useCity } from '../state/city';
 import { useUi } from '../state/ui';
 import { Attribution } from './Attribution';
 
-function formatHour(hour: number): string {
-  const total = Math.round(hour * 60) % (24 * 60);
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
-const panel = 'rounded-sm bg-ink/60 px-3 py-2 text-xs backdrop-blur-sm';
+const HINTS = {
+  foot: (
+    <>
+      <b>WASD</b> walk · <b>Shift</b> run · <b>drag</b> to look · <b>E</b> talk
+    </>
+  ),
+  auto: (
+    <>
+      <b>W/S</b> drive · <b>A/D</b> steer · <b>E</b> get out
+    </>
+  ),
+  drone: (
+    <>
+      Drone · <b>WASD</b> fly · <b>Space/Q</b> up/down · <b>F</b> back to the street
+    </>
+  ),
+};
 
 export function Hud() {
   const hour = useUi((s) => s.hour);
@@ -19,57 +31,142 @@ export function Hud() {
   const triangles = useUi((s) => s.triangles);
   const world = useUi((s) => s.world);
 
+  const area = useCity((s) => s.area);
+  const areaInside = useCity((s) => s.areaInside);
+  const mode = useCity((s) => s.mode);
+  const coins = useCity((s) => s.memory.coins);
+  const raining = useCity((s) => s.raining);
+  const jam = useCity((s) => s.jam);
+  const sketch = useCity((s) => s.sketch);
+  const panel = useCity((s) => s.panel);
+  const prompt = useCity((s) => s.prompt);
+  const talking = useCity((s) => s.conversation !== null);
+  const missions = useCity((s) => s.missions);
+  const positions = useCity((s) => s.positions);
+  const player = useCity((s) => s.player);
+  const openPanel = useCity((s) => s.openPanel);
+  const requestInteract = useCity((s) => s.requestInteract);
+  const toggleDrone = useCity((s) => s.requestDrone);
+
+  const tracker = useMemo(
+    () => trackerFor(missions, positions, player),
+    [missions, positions, player],
+  );
+  const timed = tracker?.minutesLeft !== null && tracker?.minutesLeft !== undefined;
+
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4 sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col items-start gap-2">
-          <p className={`${panel} text-paper/80`}>
-            {new URLSearchParams(window.location.search).get('view') === 'top'
-              ? 'Top-down prototype · WASD or arrows to drive'
-              : 'Fly camera · WASD move · drag to look · Q/E down/up · Shift faster'}
+    <div className="city hud">
+      <div className="hud-place">
+        {area && (
+          <div className="city-card hud-area" data-testid="area">
+            <p className="city-eyebrow">{areaInside ? 'You are in' : 'Nearest'}</p>
+            <h2 className="city-title">{area.name}</h2>
+          </div>
+        )}
+        <p className="city-card hud-hint">{HINTS[mode]}</p>
+        {jam && (
+          <p className="city-card hud-hint" data-testid="jam">
+            <b>Jam</b> · {jam} is crawling
           </p>
-          {world.near && (
-            <p className={`${panel} font-semibold text-auto`} data-testid="near">
-              Near {world.near}
-            </p>
-          )}
+        )}
+        {world.near && (
+          <p className="hud-small" data-testid="near">
+            Near {world.near}
+          </p>
+        )}
+      </div>
+
+      <div className="hud-side">
+        <div className="city-card hud-status">
+          <span className="hud-clock" data-testid="clock">
+            {formatClock(hour)}
+          </span>
+          {raining && <span className="hud-wet">Rain</span>}
+          <span className="hud-coins" data-testid="coins">
+            ₹{coins}
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <p className={`${panel} tabular-nums text-paper/80`} data-testid="stats">
-            {fps} FPS · {world.loaded} chunks{world.pending > 0 ? ` (+${world.pending})` : ''} ·{' '}
-            {drawCalls} draws · {Math.round(triangles / 1000)}k tris
-          </p>
+        <div className="hud-buttons">
           <button
             type="button"
-            onClick={pause}
-            aria-label="Pause"
-            className={`${panel} pointer-events-auto font-bold tracking-widest uppercase hover:text-auto`}
+            className="hud-button"
+            aria-pressed={panel === 'guide'}
+            onClick={() => openPanel('guide')}
           >
-            Pause
+            <span className="city-key">G</span>Ask the city
+          </button>
+          <button
+            type="button"
+            className="hud-button"
+            aria-pressed={panel === 'missions'}
+            onClick={() => openPanel('missions')}
+          >
+            <span className="city-key">M</span>Missions
+          </button>
+          <button
+            type="button"
+            className="hud-button"
+            aria-pressed={mode === 'drone'}
+            onClick={toggleDrone}
+          >
+            <span className="city-key">F</span>Drone
+          </button>
+          <button type="button" className="hud-button" aria-label="Pause" onClick={pause}>
+            <span className="city-key">Esc</span>Pause
           </button>
         </div>
+        {tracker && !panel && (
+          <div className="city-card tracker" data-testid="tracker">
+            <p className="city-eyebrow">Mission</p>
+            <h3 className="city-title">{tracker.title}</h3>
+            <p>{tracker.step}</p>
+            {(timed || tracker.heading) && (
+              <div className="tracker-meta">
+                <span>{tracker.heading ?? ''}</span>
+                {timed && (
+                  <span
+                    className={`tracker-time${(tracker.minutesLeft ?? 99) < 8 ? ' is-late' : ''}`}
+                  >
+                    {formatMinutes(tracker.minutesLeft ?? 0)} left
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <span className="text-[11px] text-paper/60">
+
+      <div className="hud-foot">
+        <span className="hud-small">
           <Attribution />
+          {sketch && ' · Placeholder streets until the real map is baked'}
+          <span data-testid="stats">
+            {' '}
+            · {fps} FPS · {world.loaded} chunks{world.pending > 0 ? ` (+${world.pending})` : ''} ·{' '}
+            {drawCalls} draws · {Math.round(triangles / 1000)}k tris
+          </span>
         </span>
-        <label
-          className={`${panel} pointer-events-auto flex w-full max-w-sm items-center gap-3 px-4 py-3`}
-        >
-          <span className="w-24 font-semibold tabular-nums">Time {formatHour(hour)}</span>
+        <label className="city-card hud-time">
+          <span>Time</span>
           <input
             type="range"
             min={0}
             max={24}
             step={0.05}
             value={hour}
+            disabled={timed}
             onChange={(event) => setHour(Number(event.target.value))}
-            className="flex-1 accent-auto"
             aria-label="Time of day"
           />
         </label>
-        <span className="hidden w-48 sm:block" />
       </div>
+
+      {prompt && !talking && !panel && (
+        <button type="button" className="prompt" data-testid="prompt" onClick={requestInteract}>
+          <span className="city-key">E</span>
+          {prompt.label}
+        </button>
+      )}
     </div>
   );
 }

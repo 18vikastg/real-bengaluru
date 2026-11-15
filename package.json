@@ -1,5 +1,5 @@
 {
-  "name": "gta-bengaluru",
+  "name": "real-bengaluru",
   "private": true,
   "version": "0.0.0",
   "description": "An original open-world browser game set in a stylised Bengaluru (internal codename).",
@@ -21,7 +21,8 @@
     "test": "vitest run",
     "e2e": "pnpm --filter @blr/game e2e",
     "world:fetch": "NODE_USE_ENV_PROXY=1 node tools/osm/fetch.mjs",
-    "world:bake": "tsx tools/osm/bake.ts"
+    "world:bake": "tsx tools/osm/bake.ts",
+    "world:sketch": "node tools/osm/sketch.mjs && tsx tools/osm/bake.ts --sketch"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

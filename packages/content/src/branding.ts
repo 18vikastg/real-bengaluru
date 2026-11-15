@@ -5,8 +5,8 @@
  */
 export const PUBLIC_TITLE = 'Rowdy Journey';
 export const TITLE_IS_FINAL = false;
-export const TAGLINE = 'New in Bengaluru. Robbed by your first friend. Take the city back.';
-export const CHAPTER = 'Chapter 1 · Koramangala';
+export const TAGLINE = 'New in Bengaluru. Talk to the city, and it remembers you.';
+export const CHAPTER = 'Chapter 1 · Majestic to MG Road';
 
 export const CREATOR = {
   name: 'Vikas T G',

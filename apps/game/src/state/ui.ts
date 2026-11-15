@@ -41,7 +41,7 @@ export const useUi = create<UiState>((set) => ({
   start: () => set({ phase: 'playing', aboutOpen: false }),
   pause: () => set((s) => (s.phase === 'playing' ? { phase: 'paused' } : s)),
   resume: () => set((s) => (s.phase === 'paused' ? { phase: 'playing', aboutOpen: false } : s)),
-  quitToTitle: () => set({ phase: 'title', aboutOpen: false, hour: GOLDEN_HOUR }),
+  quitToTitle: () => set({ phase: 'title', aboutOpen: false }),
   setAboutOpen: (aboutOpen) => set({ aboutOpen }),
   setHour: (hour) => set({ hour: Math.min(24, Math.max(0, hour)) }),
   setPerf: (fps, drawCalls, triangles) => set({ fps, drawCalls, triangles }),

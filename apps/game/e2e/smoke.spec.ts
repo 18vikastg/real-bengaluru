@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('boots to the title screen, streams the city, flies, pauses and shows credits with no console errors', async ({
+test('boots to the title screen, streams the city, talks, asks, starts a mission, pauses and shows credits with no console errors', async ({
   page,
 }) => {
   const problems: string[] = [];
@@ -65,11 +65,36 @@ test('boots to the title screen, streams the city, flies, pauses and shows credi
       },
     )
     .toBeGreaterThan(50);
-  // Flying moves the camera without errors.
+  // The city is alive: someone is standing at the bus stand, and talking to them works.
+  await expect(page.getByTestId('area')).toContainText('Majestic');
+  await expect(page.getByTestId('prompt')).toContainText('Talk to', { timeout: 30_000 });
+  await page.keyboard.press('KeyE');
+  await expect(page.getByTestId('talk-text')).not.toBeEmpty();
+  await page.keyboard.press('Digit1');
+  await expect(page.getByTestId('talk-text')).not.toBeEmpty();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('talk')).toHaveCount(0);
+
+  // The guide answers a question about where you are standing, and a typed one.
+  await page.keyboard.press('KeyG');
+  await page.getByRole('button', { name: 'Why is it called Majestic?' }).click();
+  await expect(page.getByTestId('guide-answer')).toContainText('cinema');
+  await page.getByLabel('Ask the city a question').fill('how do I get to MG Road?');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('guide-answer')).toContainText('metro');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('guide')).toHaveCount(0);
+
+  // A mission starts from the list and shows up on the HUD with its time limit.
+  await page.keyboard.press('KeyM');
+  await page.getByRole('button', { name: 'Start' }).click();
+  await expect(page.getByTestId('tracker')).toContainText('First day, 9 AM');
+  await expect(page.getByTestId('clock')).toContainText('08:1');
+
+  // Walking moves the player without errors.
   await page.keyboard.down('KeyW');
   await page.waitForTimeout(1500);
   await page.keyboard.up('KeyW');
-  await page.getByLabel('Time of day').fill('22');
 
   await page.keyboard.press('Escape');
   await expect(page.getByRole('heading', { name: 'Paused' })).toBeVisible();

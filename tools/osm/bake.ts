@@ -39,7 +39,7 @@ import {
   signedArea,
 } from '../../packages/engine/src/index';
 import { ANCHORS } from '../../packages/content/src/city/anchors';
-import { BBOX, CACHE_DIR, CHUNK_SIZE, ORIGIN, OUTPUT_DIR } from './config.mjs';
+import { BBOX, CACHE_DIR, CHUNK_SIZE, ORIGIN, OUTPUT_DIR, SKETCH_DIR } from './config.mjs';
 
 type Tags = Record<string, string>;
 interface OsmNode {
@@ -79,9 +79,15 @@ const nodes = new Map<number, OsmNode>();
 const ways = new Map<number, OsmWay>();
 const relations = new Map<number, OsmRelation>();
 
-const cachePath = fileURLToPath(CACHE_DIR);
+/** `--sketch` bakes the hand-drawn placeholder extract instead of the real one. */
+const SKETCH = process.argv.includes('--sketch');
+const cachePath = fileURLToPath(SKETCH ? SKETCH_DIR : CACHE_DIR);
 const tiles = readdirSync(cachePath).filter((name) => name.startsWith('tile_'));
-if (tiles.length === 0) throw new Error('No cached tiles. Run `pnpm world:fetch` first.');
+if (tiles.length === 0) {
+  throw new Error(
+    `No tiles in ${cachePath}. Run \`pnpm world:fetch\` (or \`pnpm world:sketch\`) first.`,
+  );
+}
 for (const name of tiles.sort()) {
   const data = JSON.parse(readFileSync(cachePath + name, 'utf8')) as { elements: RawElement[] };
   for (const element of data.elements) {
@@ -738,8 +744,8 @@ const index: WorldIndex = {
   places: topPlaces,
   spawn: anchors.majestic_bus ?? { x: 0, z: 0 },
   anchors,
-  attribution: '© OpenStreetMap contributors',
-  stats,
+  attribution: SKETCH ? 'Placeholder street sketch' : '© OpenStreetMap contributors',
+  stats: SKETCH ? { ...stats, sketch: 1 } : stats,
 };
 const indexJson = JSON.stringify(index);
 writeFileSync(`${outputPath}index.json`, indexJson);

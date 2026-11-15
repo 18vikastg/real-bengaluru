@@ -13,3 +13,5 @@ export const ORIGIN = {
 export const CHUNK_SIZE = 250;
 export const CACHE_DIR = new URL('./cache/', import.meta.url);
 export const OUTPUT_DIR = new URL('../../apps/game/public/world/', import.meta.url);
+/** Hand-drawn placeholder extract, used until the real one has been fetched. */
+export const SKETCH_DIR = new URL('./sketch/', import.meta.url);

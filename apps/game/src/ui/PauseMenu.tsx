@@ -1,3 +1,4 @@
+import { useCity } from '../state/city';
 import { useUi } from '../state/ui';
 
 const item =
@@ -7,6 +8,7 @@ export function PauseMenu() {
   const resume = useUi((s) => s.resume);
   const quitToTitle = useUi((s) => s.quitToTitle);
   const setAboutOpen = useUi((s) => s.setAboutOpen);
+  const newGame = useCity((s) => s.newGame);
 
   return (
     <div className="absolute inset-0 z-10 grid place-items-center bg-ink/75 backdrop-blur-sm">
@@ -17,6 +19,16 @@ export function PauseMenu() {
         </button>
         <button type="button" className={item} onClick={() => setAboutOpen(true)}>
           About
+        </button>
+        <button
+          type="button"
+          className={item}
+          onClick={() => {
+            newGame();
+            resume();
+          }}
+        >
+          New game
         </button>
         <button type="button" className={item} onClick={quitToTitle}>
           Quit to title

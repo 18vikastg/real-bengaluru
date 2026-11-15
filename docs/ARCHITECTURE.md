@@ -1,7 +1,7 @@
 # Architecture
 
 ```
-apps/game         Vite + React Three Fiber game client
+apps/game         Vite + React + three.js game client
 apps/site         Astro landing page
 packages/engine   Framework-free game logic (no React, no three.js imports required)
 packages/content  Data: branding, tips, and later missions, dialogue, vehicle specs
@@ -60,3 +60,28 @@ workspace and copies the game into the site output, so the landing page is at
 `deploy-preview.yml` publishes the site at `/` and the game at `/play/` on
 GitHub Pages. Base paths come from `SITE_BASE` and `GAME_BASE`, so moving to
 Vercel or Cloudflare Pages needs no code changes.
+
+## The living city
+
+Characters, missions and the guide are data in `packages/content/src/city/`,
+run by pure functions in `packages/engine/src/city/`:
+
+- `dialogue.ts` walks a character's conversation graph. Conditions read the
+  city's memory (facts, meetings, coins, items), the clock, the weather and
+  mission state; effects write back. That is all "remembering" is.
+- `bargain.ts` is the auto-fare haggle; `transit.ts` the metro and bus
+  timetable; `world.ts` the clock, rain and traffic; `missions.ts` the step
+  machine; `guide.ts` the "Ask the city" matcher.
+- `anchors.ts` names real places by latitude and longitude. The map bake snaps
+  each one to open ground or road and stores it in the world index, so
+  characters never stand inside a wall.
+
+In the app, `state/city.ts` is the one store that ties these together and
+saves to `localStorage`. `game/GameView.ts` is plain three.js: it owns the
+renderer, the player (on foot, in an auto, or the drone camera), collision
+against building walls, and the figures in the world. It reports the player's
+position to the store a few times a second and never decides game rules.
+
+To add a character: add an entry to `npcs.ts`, place it at an anchor, and run
+`pnpm test`; the content tests check every graph for dead ends and every
+mission event for someone who can raise it.
