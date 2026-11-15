@@ -87,6 +87,18 @@ export class ModelKit {
     group.add(this.part(this.torso, shirt, 0, 1.13, 0));
     group.add(this.part(this.head, skin, 0, 1.6, 0));
     group.add(this.part(this.hair, this.colour(look.hair), 0, 1.615, -0.012));
+    for (const x of [-0.055, 0.055]) {
+      const eye = this.part(
+        this.box,
+        this.colour('#15171c'),
+        x,
+        1.615,
+        0.142,
+        [0.032, 0.032, 0.02],
+      );
+      eye.castShadow = false;
+      group.add(eye);
+    }
     if (look.cap) {
       group.add(this.part(this.cap, this.colour(look.cap), 0, 1.74, 0));
       group.add(this.part(this.brim, this.colour(look.cap), 0, 1.705, 0.2));

@@ -1,5 +1,6 @@
 import { formatClock, formatMinutes } from '@blr/engine';
 import { useMemo } from 'react';
+import { useRadio } from '../audio/radio';
 import { trackerFor, useCity } from '../state/city';
 import { useUi } from '../state/ui';
 import { Attribution } from './Attribution';
@@ -26,6 +27,7 @@ export function Hud() {
   const hour = useUi((s) => s.hour);
   const setHour = useUi((s) => s.setHour);
   const pause = useUi((s) => s.pause);
+  const setAboutOpen = useUi((s) => s.setAboutOpen);
   const fps = useUi((s) => s.fps);
   const drawCalls = useUi((s) => s.drawCalls);
   const triangles = useUi((s) => s.triangles);
@@ -47,6 +49,10 @@ export function Hud() {
   const openPanel = useCity((s) => s.openPanel);
   const requestInteract = useCity((s) => s.requestInteract);
   const toggleDrone = useCity((s) => s.requestDrone);
+  const intro = useCity((s) => s.intro !== null);
+  const radioOn = useRadio((s) => s.status === 'playing');
+  const radioStation = useRadio((s) => s.stations.find((e) => e.id === s.stationId)?.name);
+  const radioNow = useRadio((s) => s.nowPlaying);
 
   const tracker = useMemo(
     () => trackerFor(missions, positions, player),
@@ -55,7 +61,7 @@ export function Hud() {
   const timed = tracker?.minutesLeft !== null && tracker?.minutesLeft !== undefined;
 
   return (
-    <div className="city hud">
+    <div className="city hud" hidden={intro}>
       <div className="hud-place">
         {area && (
           <div className="city-card hud-area" data-testid="area">
@@ -106,15 +112,31 @@ export function Hud() {
           <button
             type="button"
             className="hud-button"
+            aria-pressed={panel === 'radio'}
+            onClick={() => openPanel('radio')}
+          >
+            <span className="city-key">R</span>Radio
+          </button>
+          <button
+            type="button"
+            className="hud-button"
             aria-pressed={mode === 'drone'}
             onClick={toggleDrone}
           >
             <span className="city-key">F</span>Drone
           </button>
+          <button type="button" className="hud-button" onClick={() => setAboutOpen(true)}>
+            Developer
+          </button>
           <button type="button" className="hud-button" aria-label="Pause" onClick={pause}>
             <span className="city-key">Esc</span>Pause
           </button>
         </div>
+        {radioOn && !panel && (
+          <p className="city-card hud-hint hud-radio" data-testid="hud-radio">
+            <b>{radioStation}</b> · {radioNow}
+          </p>
+        )}
         {tracker && !panel && (
           <div className="city-card tracker" data-testid="tracker">
             <p className="city-eyebrow">Mission</p>

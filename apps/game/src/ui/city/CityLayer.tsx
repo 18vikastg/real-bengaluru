@@ -1,8 +1,9 @@
 import { NPCS_BY_ID, STATIONS } from '@blr/content';
 import type { TransitTrip } from '@blr/engine';
 import { formatClock, formatMinutes, planTrip } from '@blr/engine';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useRadio } from '../../audio/radio';
 import { MISSIONS, PLACE_NAMES, useCity } from '../../state/city';
 import { useUi } from '../../state/ui';
 
@@ -273,6 +274,207 @@ function StationPanel() {
   );
 }
 
+function IntroCard() {
+  const intro = useCity((s) => s.intro);
+  const skipIntro = useCity((s) => s.skipIntro);
+  const npc = intro ? NPCS_BY_ID[intro.npcId] : undefined;
+  if (!npc) return null;
+  return (
+    <div className="intro" data-testid="intro" onClick={skipIntro}>
+      {npc.introVideo && (
+        <video
+          className="intro-video"
+          src={`${import.meta.env.BASE_URL}${npc.introVideo}`}
+          autoPlay
+          playsInline
+          onEnded={skipIntro}
+          onError={skipIntro}
+        />
+      )}
+      <div className="intro-bar" />
+      <div className="intro-name" key={npc.id}>
+        <p className="city-eyebrow">{npc.role}</p>
+        <h2 className="city-title">{npc.name}</h2>
+        <p className="intro-tagline">{npc.tagline}</p>
+      </div>
+      <div className="intro-bar intro-bar-low">
+        <span>
+          <span className="city-key">E</span> skip
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function RadioPanel() {
+  const stations = useRadio((s) => s.stations);
+  const stationId = useRadio((s) => s.stationId);
+  const status = useRadio((s) => s.status);
+  const nowPlaying = useRadio((s) => s.nowPlaying);
+  const message = useRadio((s) => s.message);
+  const volume = useRadio((s) => s.volume);
+  const sounds = useRadio((s) => s.sounds);
+  const bundled = useRadio((s) => s.bundled);
+  const device = useRadio((s) => s.device);
+  const tune = useRadio((s) => s.tune);
+  const stop = useRadio((s) => s.stop);
+  const skip = useRadio((s) => s.skip);
+  const setVolume = useRadio((s) => s.setVolume);
+  const setSounds = useRadio((s) => s.setSounds);
+  const addFiles = useRadio((s) => s.addFiles);
+  const addStream = useRadio((s) => s.addStream);
+  const removeStation = useRadio((s) => s.removeStation);
+  const openPanel = useCity((s) => s.openPanel);
+  const picker = useRef<HTMLInputElement>(null);
+  const [name, setName] = useState('');
+  const [url, setUrl] = useState('');
+  const [problem, setProblem] = useState('');
+
+  const current = stations.find((station) => station.id === stationId);
+  const on = status !== 'off';
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const error = addStream(name, url);
+    setProblem(error ?? '');
+    if (!error) {
+      setName('');
+      setUrl('');
+    }
+  };
+
+  return (
+    <aside className="city-card panel" data-testid="radio">
+      <header className="panel-head">
+        <div>
+          <p className="city-eyebrow">{on ? `On air · ${current?.band ?? ''}` : 'Radio'}</p>
+          <h2 className="city-title">{on ? (current?.name ?? 'Radio') : 'Off'}</h2>
+        </div>
+        <button type="button" className="panel-close" onClick={() => openPanel(null)}>
+          Close
+        </button>
+      </header>
+      <div className="panel-body">
+        <div className="radio-now" data-testid="radio-now">
+          <span className={`radio-dot is-${status}`} />
+          <span>
+            {status === 'off' && 'Pick a station.'}
+            {status === 'loading' && 'Tuning…'}
+            {status === 'playing' && (nowPlaying || 'Playing')}
+            {status === 'error' && message}
+          </span>
+        </div>
+        <div className="radio-controls">
+          <button type="button" className="button" onClick={() => (on ? stop() : tune(stationId))}>
+            {on ? 'Stop' : 'Play'}
+          </button>
+          <button type="button" className="panel-close" disabled={!on} onClick={skip}>
+            Next
+          </button>
+          <label className="radio-volume">
+            <span>Volume</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.02}
+              value={volume}
+              onChange={(event) => setVolume(Number(event.target.value))}
+              aria-label="Radio volume"
+            />
+          </label>
+        </div>
+
+        <h3 className="panel-section">Stations</h3>
+        {stations.map((station) => {
+          const count =
+            station.kind === 'tracks'
+              ? bundled.length
+              : station.kind === 'device'
+                ? device.length
+                : -1;
+          return (
+            <div
+              key={station.id}
+              className={`station${station.id === stationId && on ? ' is-on' : ''}`}
+            >
+              <button type="button" className="station-main" onClick={() => tune(station.id)}>
+                <em>{station.band}</em>
+                <b>{station.name}</b>
+                <span>
+                  {station.blurb}
+                  {count >= 0 && ` ${count} ${count === 1 ? 'song' : 'songs'}.`}
+                </span>
+              </button>
+              {station.kind === 'device' && (
+                <button
+                  type="button"
+                  className="panel-close"
+                  onClick={() => picker.current?.click()}
+                >
+                  Add songs
+                </button>
+              )}
+              {station.band === 'Saved' && (
+                <button
+                  type="button"
+                  className="panel-close"
+                  onClick={() => removeStation(station.id)}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          );
+        })}
+        <input
+          ref={picker}
+          type="file"
+          accept="audio/*"
+          multiple
+          hidden
+          onChange={(event) => {
+            addFiles(event.target.files);
+            event.target.value = '';
+          }}
+        />
+
+        <h3 className="panel-section">Add a live station</h3>
+        <p>Paste the stream address of any internet radio station, such as a Kannada FM station.</p>
+        <form className="radio-add" onSubmit={submit}>
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Station name"
+            aria-label="Station name"
+            maxLength={40}
+          />
+          <input
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            placeholder="https://… (MP3, AAC or .m3u8)"
+            aria-label="Stream address"
+            maxLength={300}
+          />
+          <button type="submit" className="button" disabled={!url.trim()}>
+            Add
+          </button>
+        </form>
+        {problem && <p className="radio-problem">{problem}</p>}
+
+        <h3 className="panel-section">City sounds</h3>
+        <label className="radio-toggle">
+          <input
+            type="checkbox"
+            checked={sounds}
+            onChange={(event) => setSounds(event.target.checked)}
+          />
+          <span>Traffic, rain, horns and your auto’s engine</span>
+        </label>
+      </div>
+    </aside>
+  );
+}
+
 function TravelOverlay() {
   const travel = useCity((s) => s.travel);
   if (!travel) return null;
@@ -316,7 +518,9 @@ export function CityLayer() {
       {panel === 'guide' && <GuidePanel />}
       {panel === 'missions' && <MissionsPanel />}
       {panel === 'station' && <StationPanel />}
+      {panel === 'radio' && <RadioPanel />}
       <ToastView />
+      <IntroCard />
       <TravelOverlay />
     </div>
   );

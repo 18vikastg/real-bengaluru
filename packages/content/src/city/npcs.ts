@@ -30,6 +30,10 @@ export interface NpcLook {
 
 export interface NpcDef extends NpcScript {
   role: string;
+  /** One line shown under the name the first time the player meets them. */
+  tagline: string;
+  /** Optional video in apps/game/public (e.g. "intros/manju.mp4") played instead of the in-engine intro. */
+  introVideo?: string;
   /** Where the character stands: the first entry whose condition holds. */
   places: readonly { when?: Condition; anchor: string }[];
   /** Metres east and south of the anchor, so people sharing a spot do not overlap. */
@@ -41,6 +45,7 @@ const manju: NpcDef = {
   id: 'manju',
   name: 'Manju',
   role: 'Auto driver',
+  tagline: 'Twenty-two years at the Majestic stand. The meter has never once worked.',
   places: [{ anchor: 'majestic_auto' }],
   offset: [2.6, 0.8],
   look: { shirt: '#b89a5e', trousers: '#8a744a', skin: '#8d5a3b', hair: '#1c1714' },
@@ -189,6 +194,7 @@ const saleem: NpcDef = {
   id: 'saleem',
   name: 'Saleem',
   role: 'Auto driver',
+  tagline: 'Says one-and-half. Means it.',
   places: [{ anchor: 'mg_road_auto' }],
   offset: [-2.6, 0.8],
   look: { shirt: '#b89a5e', trousers: '#6f6046', skin: '#a26b47', hair: '#2a2420' },
@@ -253,6 +259,7 @@ const shantha: NpcDef = {
   id: 'shantha',
   name: 'Shanthakka',
   role: 'Runs Hotte Thumba Darshini',
+  tagline: 'Thirty years behind one counter. Remembers every order.',
   places: [{ anchor: 'kg_road' }],
   offset: [0, 0],
   look: { shirt: '#b3402e', trousers: '#7d2a20', skin: '#9a6444', hair: '#1a1513' },
@@ -456,6 +463,7 @@ const ravi: NpcDef = {
   id: 'ravi',
   name: 'Constable Ravi',
   role: 'Traffic police',
+  tagline: 'One man, one whistle, four roads of traffic.',
   places: [{ anchor: 'hudson_circle' }],
   offset: [0, 0],
   look: { shirt: '#f1efe9', trousers: '#9a8257', skin: '#7f5237', hair: '#15110f', cap: '#9a8257' },
@@ -539,6 +547,7 @@ const karthik: NpcDef = {
   id: 'karthik',
   name: 'Karthik',
   role: 'New in town',
+  tagline: 'Arrived from Hubballi this morning. Already lost.',
   places: [{ when: { fact: 'karthik.told' }, anchor: 'church_street' }, { anchor: 'majestic_bus' }],
   offset: [3.2, -1.8],
   look: { shirt: '#3d6fb3', trousers: '#2b2f3a', skin: '#96603f', hair: '#17120f' },
@@ -749,6 +758,7 @@ const basava: NpcDef = {
   id: 'basava',
   name: 'Basavaraj',
   role: 'BMTC conductor',
+  tagline: 'Knows every bus in Karnataka. Has change for none of them.',
   places: [{ anchor: 'majestic_bus' }],
   offset: [-3.4, 1.6],
   look: { shirt: '#a88d58', trousers: '#8f7748', skin: '#84563a', hair: '#201a16', cap: '#8f7748' },
@@ -814,6 +824,7 @@ const lakshmi: NpcDef = {
   id: 'lakshmi',
   name: 'Lakshmi',
   role: 'Flower seller',
+  tagline: 'Sells jasmine by the forearm. Her forearm.',
   places: [{ anchor: 'kr_market' }],
   offset: [0, 0],
   look: { shirt: '#2f8f6a', trousers: '#c9892b', skin: '#8a5a3c', hair: '#141110' },
@@ -890,6 +901,7 @@ const imran: NpcDef = {
   id: 'imran',
   name: 'Imran',
   role: 'Bookseller',
+  tagline: 'Sells books. Opinions are free.',
   places: [{ anchor: 'church_street' }],
   offset: [-3.4, 1.4],
   look: { shirt: '#e6dcc6', trousers: '#4a4136', skin: '#a8734f', hair: '#3a332d' },
@@ -939,6 +951,7 @@ const deepa: NpcDef = {
   id: 'deepa',
   name: 'Deepa',
   role: 'Your team lead',
+  tagline: 'Your team lead. Nine o’clock means nine o’clock.',
   places: [{ anchor: 'mg_road_metro' }],
   offset: [2.4, 2.2],
   look: { shirt: '#6a4fa3', trousers: '#2e2a3a', skin: '#9c6848', hair: '#120f0e' },

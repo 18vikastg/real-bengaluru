@@ -15,6 +15,7 @@ import { useUi } from '../state/ui';
 import { ChunkStreamer } from '../world/ChunkStreamer';
 import type { WorldMaterials } from '../world/materials';
 import { createWorldMaterials } from '../world/materials';
+import { Ambience } from '../audio/ambience';
 import { AmbientLife } from './Ambient';
 import { Atmosphere } from './Atmosphere';
 import type { Figure } from './models';
@@ -81,6 +82,8 @@ export class GameView {
   private readonly atmosphere: Atmosphere;
   private readonly kit = new ModelKit();
   private readonly ambient: AmbientLife;
+  private readonly ambience = new Ambience();
+  private introTime = 0;
   private readonly ground: THREE.Mesh;
   private readonly resizer: ResizeObserver;
   private readonly raycaster = new THREE.Raycaster();
@@ -200,11 +203,18 @@ export class GameView {
     if (isTyping(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
     if (useUi.getState().phase !== 'playing') return;
     const city = useCity.getState();
+    if (city.intro) {
+      // Any of the usual keys skips an introduction.
+      if (!event.repeat && ['KeyE', 'Space', 'Enter'].includes(event.code)) city.skipIntro();
+      event.preventDefault();
+      return;
+    }
     if (!event.repeat) {
       if (event.code === 'KeyE') this.interact();
       else if (event.code === 'KeyF') this.toggleDrone();
       else if (event.code === 'KeyG') city.openPanel('guide');
       else if (event.code === 'KeyM') city.openPanel('missions');
+      else if (event.code === 'KeyR') city.openPanel('radio');
       else if (city.conversation && /^Digit[1-9]$/.test(event.code)) {
         city.reply(Number(event.code.slice(5)) - 1);
       }
@@ -268,7 +278,7 @@ export class GameView {
   /** E, or a click on the prompt: talk, board, or get in or out of an auto. */
   private interact(): void {
     const city = useCity.getState();
-    if (city.conversation || city.travel || city.panel) return;
+    if (city.conversation || city.travel || city.panel || city.intro) return;
     if (this.driving) this.leaveAuto();
     else if (city.prompt?.kind === 'auto') this.enterAuto(city.prompt.id);
     else city.interact();
@@ -515,6 +525,26 @@ export class GameView {
     this.camera.lookAt(this.x, height + 0.7, this.z);
   }
 
+  /** The camera's part in a character introduction: a slow push-in arc on their face. */
+  private introduce(dt: number, npcId: string): void {
+    const npc = this.npcs.find((entry) => entry.id === npcId);
+    if (!npc) return;
+    this.introTime += dt;
+    const at = npc.figure.group.position;
+    const t = Math.min(1, this.introTime / 4.2);
+    const ease = 1 - (1 - t) ** 3;
+    // Start off to one side of where the character is facing and swing round to the front.
+    const angle = npc.figure.group.rotation.y + 0.9 - ease * 0.75;
+    const reach = 4.6 - ease * 2.1;
+    scratch.set(at.x + Math.sin(angle) * reach, 1.75 - ease * 0.15, at.z + Math.cos(angle) * reach);
+    if (this.introTime <= dt) this.camera.position.copy(scratch);
+    else this.camera.position.lerp(scratch, 1 - Math.exp(-dt * 8));
+    // Aim a little to the character's side so they stand right of centre, clear of their name.
+    const rightX = Math.cos(angle);
+    const rightZ = -Math.sin(angle);
+    this.camera.lookAt(at.x - rightX * 0.95, 1.42, at.z - rightZ * 0.95);
+  }
+
   private animateActors(dt: number, time: number): void {
     const city = useCity.getState();
     this.avatar.group.position.set(this.x, 0, this.z);
@@ -525,8 +555,8 @@ export class GameView {
       const dx = this.x - group.position.x;
       const dz = this.z - group.position.z;
       const distance = Math.hypot(dx, dz);
-      npc.label.visible = distance < 70;
-      npc.marker.visible = distance < 120 && city.conversation?.npcId !== npc.id;
+      npc.label.visible = distance < 70 && !city.intro;
+      npc.marker.visible = distance < 120 && !city.intro && city.conversation?.npcId !== npc.id;
       npc.marker.rotation.y = time * 1.6 + npc.phase;
       npc.marker.position.y = 2.78 + Math.sin(time * 2 + npc.phase) * 0.06;
       // Idle sway; turn to face the player when they come close.
@@ -595,7 +625,11 @@ export class GameView {
     }
 
     const playing = ui.phase === 'playing' && this.index !== null;
-    const busy = city.conversation !== null || city.travel !== null || city.panel !== null;
+    const busy =
+      city.conversation !== null ||
+      city.travel !== null ||
+      city.panel !== null ||
+      city.intro !== null;
 
     if (playing) {
       this.clockTimer += dt;
@@ -609,8 +643,10 @@ export class GameView {
         this.wallTimer = 0;
       }
       if (busy) this.keys.clear();
-      if (city.mode === 'drone') this.fly(dt);
+      if (city.intro) this.introduce(dt, city.intro.npcId);
+      else if (city.mode === 'drone') this.fly(dt);
       else {
+        this.introTime = 0;
         if (this.driving) this.drive(dt, this.driving);
         else this.walk(busy ? 0 : dt);
         this.follow(dt, false);
@@ -648,6 +684,9 @@ export class GameView {
       this.camera.position.x + scratch.x * lead,
       this.camera.position.z + scratch.z * lead,
     );
+    if (playing && !city.travel) {
+      this.ambience.update(dt, ui.hour, city.raining, this.driving ? this.speed : null, false);
+    } else this.ambience.hush();
     this.atmosphere.update(this.camera, ui.hour, city.raining, dt);
     this.renderer.render(this.scene, this.camera);
 
@@ -677,6 +716,7 @@ export class GameView {
     this.scene.remove(this.streamer.root, this.actors, this.ground);
     this.streamer.dispose();
     this.ambient.dispose();
+    this.ambience.dispose();
     this.atmosphere.dispose();
     this.kit.dispose();
     this.ground.geometry.dispose();

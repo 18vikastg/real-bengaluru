@@ -1,5 +1,6 @@
 import { CHAPTER, CREATOR, CREDIT_LINE, PUBLIC_TITLE, TAGLINE, pickTip } from '@blr/content';
 import { useState } from 'react';
+import { unlockAudio } from '../audio/radio';
 import { useUi } from '../state/ui';
 import { Attribution } from './Attribution';
 
@@ -28,7 +29,10 @@ export function TitleScreen() {
         <div className="rise mt-8 flex flex-wrap gap-3" style={{ animationDelay: '240ms' }}>
           <button
             type="button"
-            onClick={start}
+            onClick={() => {
+              unlockAudio();
+              start();
+            }}
             className="rounded-sm bg-auto px-8 py-3 text-sm font-bold tracking-widest text-ink uppercase transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-auto active:translate-y-px"
           >
             Play

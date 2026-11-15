@@ -25,6 +25,16 @@ metro, and talk to people who remember what you said to them.
   Peak-hour traffic and evening showers change what works.
 - **Streets with life on them.** Cars, autos, buses and pedestrians follow the
   real roads, keep left, crawl at peak hour and brake for you.
+- **Character introductions.** The first time you meet someone, the camera
+  cuts to them with their name and a line about who they are. To use a real
+  video instead, put it in `apps/game/public/intros/` and set `introVideo` on
+  the character in `packages/content/src/city/npcs.ts`.
+- **A radio.** Press R. Raga FM generates music live in the browser. My Songs
+  plays files from the player's own device. Namma Mixtape plays whatever is
+  listed in `apps/game/public/music/tracks.json` (only add music you have the
+  right to publish). Any internet radio stream can be added by its address.
+- **City sounds.** Traffic rumble, horns, rain and your auto's engine, all
+  synthesised; switch them off in the radio panel.
 - **Ask the city.** Press G anywhere for a guide to the area you are standing
   in: what the place is, its history, where to eat, how to get somewhere else.
 - **The real map.** Streets, buildings and parks are baked from OpenStreetMap.
@@ -41,6 +51,7 @@ timings and fares are game values, not a real timetable.
 | E           | Talk, board, get in or out of an auto |
 | 1 to 9      | Pick a reply                          |
 | G / M       | Ask the city / missions and journal   |
+| R           | Radio and city sounds                 |
 | F           | Drone camera                          |
 | Esc         | Back out, pause                       |
 

@@ -69,6 +69,9 @@ test('boots to the title screen, streams the city, talks, asks, starts a mission
   await expect(page.getByTestId('area')).toContainText('Majestic');
   await expect(page.getByTestId('prompt')).toContainText('Talk to', { timeout: 30_000 });
   await page.keyboard.press('KeyE');
+  // A first meeting opens with the character's introduction; E skips it.
+  await expect(page.getByTestId('intro')).toContainText('Basavaraj');
+  await page.keyboard.press('KeyE');
   await expect(page.getByTestId('talk-text')).not.toBeEmpty();
   await page.keyboard.press('Digit1');
   await expect(page.getByTestId('talk-text')).not.toBeEmpty();
@@ -84,6 +87,14 @@ test('boots to the title screen, streams the city, talks, asks, starts a mission
   await expect(page.getByTestId('guide-answer')).toContainText('metro');
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('guide')).toHaveCount(0);
+
+  // The radio tunes to the generated station and shows what is playing.
+  await page.keyboard.press('KeyR');
+  await page.getByRole('button', { name: /Raga FM/ }).click();
+  await expect(page.getByTestId('radio-now')).toContainText('Raga');
+  await page.getByRole('button', { name: 'Stop' }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('radio')).toHaveCount(0);
 
   // A mission starts from the list and shows up on the HUD with its time limit.
   await page.keyboard.press('KeyM');

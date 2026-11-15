@@ -54,7 +54,7 @@ import { create } from 'zustand';
 import { useUi } from './ui';
 
 export type Mode = 'foot' | 'auto' | 'drone';
-export type Panel = 'guide' | 'missions' | 'station' | null;
+export type Panel = 'guide' | 'missions' | 'station' | 'radio' | null;
 
 export type Prompt =
   | { kind: 'npc'; id: string; label: string }
@@ -99,6 +99,8 @@ const SAVE_KEY = 'real-bengaluru.save.v1';
 const TALK_RANGE = 5;
 const STATION_RANGE = 16;
 const TRAVEL_SECONDS = 2.4;
+const INTRO_SECONDS = 4.2;
+const INTRO_VIDEO_SECONDS = 90;
 
 const PLACE_NAMES: Readonly<Record<string, string>> = Object.fromEntries(
   ANCHORS.map((anchor) => [anchor.id, anchor.name]),
@@ -148,6 +150,8 @@ interface CityState {
   prompt: Prompt | null;
   conversation: Conversation | null;
   pendingRide: Extract<DialogueOutput, { kind: 'ride' }> | null;
+  /** A character's introduction is playing; the conversation follows it. */
+  intro: { npcId: string; left: number } | null;
   panel: Panel;
   stationId: string | null;
   guideAnswer: GuideAnswer | null;
@@ -173,6 +177,7 @@ interface CityState {
   requestDrone: () => void;
   reply: (index: number) => void;
   closeTalk: () => void;
+  skipIntro: () => void;
   openPanel: (panel: Panel) => void;
   ask: (question: string) => void;
   beginMission: (id: string) => void;
@@ -343,6 +348,14 @@ export const useCity = create<CityState>((set, get) => {
     persist();
   };
 
+  const startTalk = (npcId: string) => {
+    const npc = NPCS_BY_ID[npcId];
+    if (!npc) return;
+    const step = openConversation(npc, context());
+    set({ memory: step.memory, conversation: step.conversation, prompt: null, intro: null });
+    handle(step.outputs);
+  };
+
   const afterTalk = () => {
     const ride = get().pendingRide;
     if (ride) {
@@ -383,6 +396,7 @@ export const useCity = create<CityState>((set, get) => {
     prompt: null,
     conversation: null,
     pendingRide: null,
+    intro: null,
     panel: null,
     stationId: null,
     guideAnswer: null,
@@ -498,6 +512,12 @@ export const useCity = create<CityState>((set, get) => {
         else set({ travelLeft });
         return;
       }
+      if (state.intro) {
+        const left = state.intro.left - realSeconds;
+        if (left <= 0) startTalk(state.intro.npcId);
+        else set({ intro: { npcId: state.intro.npcId, left } });
+        return;
+      }
       // The clock stands still while you are talking or reading a timetable.
       if (state.conversation || state.panel === 'station') return;
       passMinutes((realSeconds * CLOCK_RATE) / 60);
@@ -516,13 +536,20 @@ export const useCity = create<CityState>((set, get) => {
     interact: () => {
       const state = get();
       const prompt = state.prompt;
-      if (!prompt || state.conversation || state.travel || state.panel) return;
+      if (!prompt || state.conversation || state.travel || state.panel || state.intro) return;
       if (prompt.kind === 'npc') {
         const npc = NPCS_BY_ID[prompt.id];
         if (!npc) return;
-        const step = openConversation(npc, context());
-        set({ memory: step.memory, conversation: step.conversation, prompt: null });
-        handle(step.outputs);
+        const seen = `intro.${npc.id}`;
+        if (state.memory.facts[seen]) startTalk(npc.id);
+        else {
+          // First meeting: play their introduction, then start talking.
+          set({
+            memory: withFact(state.memory, seen, true),
+            intro: { npcId: npc.id, left: npc.introVideo ? INTRO_VIDEO_SECONDS : INTRO_SECONDS },
+            prompt: null,
+          });
+        }
       } else if (prompt.kind === 'station') {
         set({ panel: 'station', stationId: prompt.id });
       }
@@ -550,9 +577,14 @@ export const useCity = create<CityState>((set, get) => {
       afterTalk();
     },
 
+    skipIntro: () => {
+      const intro = get().intro;
+      if (intro) startTalk(intro.npcId);
+    },
+
     openPanel: (panel) => {
       const state = get();
-      if (state.conversation || state.travel) return;
+      if (state.conversation || state.travel || state.intro) return;
       set({
         panel: state.panel === panel ? null : panel,
         guideAnswer: panel === 'guide' ? null : state.guideAnswer,
@@ -608,6 +640,7 @@ export const useCity = create<CityState>((set, get) => {
         mode: 'foot',
         conversation: null,
         pendingRide: null,
+        intro: null,
         panel: null,
         travel: null,
         guideAnswer: null,
